@@ -1,13 +1,13 @@
 import cv2
 import numpy as np
-from djitellopy import tello  #not important for ur part (drone library )
+# from djitellopy import tello  #not important for ur part (drone library )
 # connect with drone
-me = tello.Tello()
-me.connect()
-print(me.get_battery()) # get battery value
+# me = tello.Tello()
+# me.connect()
+# print(me.get_battery()) # get battery value
 # start stream and capture video
-me.streamon()
-me.takeoff()
+# me.streamon()
+# me.takeoff()
 # end of drone insruct
 
 
@@ -78,13 +78,13 @@ def sendCommands(senout,cx): ## this function to send comands to the vieihecle -
     elif senout == [0, 0, 0]: curve = wighits[2]
     elif senout == [1, 1, 1]: curve = wighits[2]
     elif senout == [1, 0, 1]: curve = wighits[2]
-    me.send_rc_control(lr,FWspeed,0,curve)
+	# me.send_rc_control(lr,FWspeed,0,curve)
 
 
 
 while True:
-    #ret, img = cap.read()
-    img = me.get_frame_read().frame
+    ret, img = cap.read()
+	# img = me.get_frame_read().frame
     img = cv2.resize(img, (width, height)) #size shoudle be divisible by the nubmer of the sensors otherwise it wont work
     # img=cv2.flip(img,0) #flip the camera cuz i am using mirror in the drone
     imgT = thresholding(img)
