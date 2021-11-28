@@ -13,9 +13,10 @@ import numpy as np
 
 cap = cv2.VideoCapture(0)     #opencv reads video from camera ---- if couldnt read then change from 0 to 1
 hsvValues = [0, 0, 117, 179, 22, 219]  # values to reccog the the line --- numbers is givin by a script i will send it to u
+# 0,0,0,179,72,148 (initial value tests on the pc)
 sensors = 3   # numbers of sensors == numbers of sub screens
 threshold = 0.2
-width , height = 488 , 360  # width and height of the screen ---- should be divisible by the number of sub screen/sensors
+width , height = 480 , 360  # width and height of the screen ---- should be divisible by the number of sub screen/sensors
 sensitivity = 3 # if number is high less sensitive
 wighits = [-25,-15,0,15,25]
 curve = 0
