@@ -1,24 +1,19 @@
 import cv2
 import numpy as np
-# from djitellopy import tello  #not important for ur part (drone library )
-# connect with drone
-# me = tello.Tello()
-# me.connect()
-# print(me.get_battery()) # get battery value
-# start stream and capture video
-# me.streamon()
-# me.takeoff()
-# end of drone insruct
+
+import RPi.GPIO as gpio
+import motor as robot
 
 
 cap = cv2.VideoCapture(0)     #opencv reads video from camera ---- if couldnt read then change from 0 to 1
-hsvValues = [0, 0, 117, 179, 22, 219]  # values to reccog the the line --- numbers is givin by a script i will send it to u
+hsvValues = [0, 0, 0, 179, 185, 105]  # values to reccog the the line 
 # 0,0,0,179,72,148 (initial value tests on the pc)
 sensors = 3   # numbers of sensors == numbers of sub screens
 threshold = 0.2
+vthreshold = 0.1
 width , height = 480 , 360  # width and height of the screen ---- should be divisible by the number of sub screen/sensors
-sensitivity = 3 # if number is high less sensitive
-wighits = [-25,-15,0,15,25]
+sensitivity = 5 # if number is high less sensitive
+weights = [-25,-15,0,15,25]
 curve = 0
 FWspeed = 15
 
@@ -46,9 +41,19 @@ def getCountours(imgT, img ):
 
 
 def getSensorOutput(imgT,sensors): ## if the sensor have problem in detecting check here
-    imgs = np.hsplit(imgT,sensors)
-    totalpixels = (img.shape[1]//sensors) * img.shape[0]
+    imgv = np.vsplit(imgT, sensors)
+    imgs = np.hsplit(imgv[1],sensors)
+    totalpixels = (img.shape[1]//(sensors * sensors)) * img.shape[0]
     senout= []
+
+    # junction detection
+    imgv = np.vsplit(imgv[0], sensors)[2]
+    vpixels = (img.shape[1]//sensors ) * img.shape[0]
+    vpix_count = cv2.countNonZero(imgv) 
+    if vpix_count > vthreshold * vpixels:
+        jn = 1
+    else: jn = 0
+
     for x,im in enumerate(imgs):
         pixilcount = cv2.countNonZero(im)
         if pixilcount > threshold*totalpixels :
@@ -56,52 +61,67 @@ def getSensorOutput(imgT,sensors): ## if the sensor have problem in detecting ch
         else:
             senout.append(0)
         cv2.imshow(str(x),im)
-    print(senout)
-    return senout
 
 
-def sendCommands(senout,cx): ## this function to send comands to the vieihecle ---- u can change here to command
+    return [senout, jn]
+
+
+def sendCommands(senout,cx): 
     global curve
     ## translation
     lr = (cx - width//2)//sensitivity
-    lr = int(np.clip(lr,-10,10))
-    if lr < 2 and lr >-2 : lr = 0 # tolerance for drone so it doesnt move always
+    lr = int(np.clip(lr,-50,50))
+    if lr < 20 and lr >-20 : lr = 0 # tolerance for drone so it doesnt move always
 
     # rotation
     #normal cases
-    if senout == [1,0,0]: curve = wighits[0]
-    elif senout == [1, 0, 0]: curve = wighits[0]
-    elif senout == [1, 1, 0]: curve = wighits[1]
-    elif senout == [0, 1, 0]: curve = wighits[0]
-    elif senout == [0, 1, 1]: curve = wighits[3]
-    elif senout == [0, 0, 1]: curve = wighits[4]
+    if senout == [1,0,0]: curve = weights[0]
+    elif senout == [1, 0, 0]: curve = weights[0]
+    elif senout == [1, 1, 0]: curve = weights[1]
+    elif senout == [0, 1, 0]: curve = weights[2]
+    elif senout == [0, 1, 1]: curve = weights[3]
+    elif senout == [0, 0, 1]: curve = weights[4]
     ## hard cases to happen
-    elif senout == [0, 0, 0]: curve = wighits[2]
-    elif senout == [1, 1, 1]: curve = wighits[2]
-    elif senout == [1, 0, 1]: curve = wighits[2]
-	# me.send_rc_control(lr,FWspeed,0,curve)
+    elif senout == [0, 0, 0]: curve = weights[2]
+    elif senout == [1, 1, 1]: curve = weights[2]
+    elif senout == [1, 0, 1]: curve = weights[2]
+
+    print(f'senout: {senout}; curve: {curve} lr: {lr}')
+    
+    return [curve, lr]
 
 
 
+I = 0
+last_Error = 0
 while True:
-    ret, img = cap.read()
-	# img = me.get_frame_read().frame
-    img = cv2.resize(img, (width, height)) #size shoudle be divisible by the nubmer of the sensors otherwise it wont work
-    # img=cv2.flip(img,0) #flip the camera cuz i am using mirror in the drone
-    imgT = thresholding(img)
-    cx = getCountours(imgT,img) ## translation
-    senout = getSensorOutput(imgT,sensors) ## rotation
+    try:
+        ret, img = cap.read()
+        img = cv2.resize(img, (width, height)) #size shoudle be divisible by the nubmer of the sensors otherwise it wont work
+        imgT = thresholding(img)
+        cx = getCountours(imgT,img) ## translation
+        senout = getSensorOutput(imgT,sensors) ## rotation
+        direction = sendCommands(senout,cx)
+        I = I + direction[1]
+        robot.steer(direction[0], direction[1], senout[1], I, last_Error)
+        last_Error = direction[1]
 
-    sendCommands(senout,cx)
+        #diplay normal and hsv adjusted
+        cv2.imshow('final', img)   ## showing actual video
+        cv2.imshow('black and white',imgT) ## shows black and white
+        cv2.waitKey(1)
 
+        #escape key to break
+        k = cv2.waitKey(30) & 0xff
+        if k == 27:
+            break
 
-    #diplay normal and hsv adjusted
-    cv2.imshow('final', img)   ## showing actual video
-    cv2.imshow('black and white',imgT) ## shows black and white
-    cv2.waitKey(1)
+    except Exception as e:
+        print(e)
 
-    #escape key to break
-    k = cv2.waitKey(30) & 0xff
-    if k == 27:
-        break
+    finally: 
+
+        pass
+        # robot.gpio.cleanup()
+        
 

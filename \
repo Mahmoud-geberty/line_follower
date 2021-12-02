@@ -56,33 +56,25 @@ def stop():
 
 def straight(speed):
     rm_forward(speed)
-    lm_forward(speed + 3)
+    lm_forward(speed)
 
 def start():
     straight(35)
 
 def reverse(speed):
     rm_backward(speed)
-    lm_backward(speed)
+    lm_backward(speed + 20)
 
-P = 0
-D = 0
-def steer(curve, error, jn, I, last_error):
-    # error gain
+def steer(curve, lr, jn):
+    print(f'recerived: {curve} {lr} jn{jn}')
+    # lr gain
     speed = 35
-    Kp = 0.25
-    Ki = 0.002
-    Kd = 0.15
-    P = error * Kp
-    I = I * Ki
-    D = (error - last_error) * Kd
-    last_error = error
-    print(f'received: curve: {curve}, error: {error}, jn: {jn} and PID {P + I + D}')
+    offset_lr = lr * 0.15
     r_tune = 5 # help make the base speed of each motor same
 
-    #direction control using error only
-    rm_forward(speed - (P + I + D))
-    lm_forward(speed + (P + I + D))
+    #direction control using lr only
+    rm_forward(speed - offset_lr)
+    lm_forward(speed + offset_lr)
 
 
 if __name__ == '__main__':
