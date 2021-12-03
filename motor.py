@@ -69,10 +69,10 @@ P = 0
 D = 0
 def steer(curve, error, jn, I, last_error):
     # error gain
-    speed = 35
-    Kp = 0.25
-    Ki = 0.002
-    Kd = 0.15
+    speed = 40
+    Kp = 0.05
+    Ki = 0.0003
+    Kd = 0.02
     P = error * Kp
     I = I * Ki
     D = (error - last_error) * Kd

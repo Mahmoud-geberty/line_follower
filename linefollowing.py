@@ -12,14 +12,11 @@ sensors = 3   # numbers of sensors == numbers of sub screens
 threshold = 0.2
 vthreshold = 0.1
 width , height = 480 , 360  # width and height of the screen ---- should be divisible by the number of sub screen/sensors
-sensitivity = 5 # if number is high less sensitive
+sensitivity = 4 # if number is high less sensitive
 weights = [-25,-15,0,15,25]
 curve = 0
-FWspeed = 15
 
 
-
-# dont change this func
 def thresholding(img):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     lower = np.array([hsvValues[0], hsvValues[1], hsvValues[2]])
@@ -69,9 +66,9 @@ def getSensorOutput(imgT,sensors): ## if the sensor have problem in detecting ch
 def sendCommands(senout,cx): 
     global curve
     ## translation
-    lr = (cx - width//2)//sensitivity
-    lr = int(np.clip(lr,-50,50))
-    if lr < 20 and lr >-20 : lr = 0 # tolerance for drone so it doesnt move always
+    lr = (cx - width//2) #//sensitivity
+    lr = int(np.clip(lr,-200,200))
+    if lr < 4 and lr >-4 : lr = 0 # tolerance for drone so it doesnt move always
 
     # rotation
     #normal cases
@@ -86,7 +83,6 @@ def sendCommands(senout,cx):
     elif senout == [1, 1, 1]: curve = weights[2]
     elif senout == [1, 0, 1]: curve = weights[2]
 
-    print(f'senout: {senout}; curve: {curve} lr: {lr}')
     
     return [curve, lr]
 
@@ -97,11 +93,13 @@ last_Error = 0
 while True:
     try:
         ret, img = cap.read()
-        img = cv2.resize(img, (width, height)) #size shoudle be divisible by the nubmer of the sensors otherwise it wont work
+        img = cv2.resize(img, (width, height))
         imgT = thresholding(img)
         cx = getCountours(imgT,img) ## translation
         senout = getSensorOutput(imgT,sensors) ## rotation
         direction = sendCommands(senout,cx)
+
+        # some computation that couldn't be done in the robot module
         I = I + direction[1]
         robot.steer(direction[0], direction[1], senout[1], I, last_Error)
         last_Error = direction[1]
