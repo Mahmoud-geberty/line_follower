@@ -5,7 +5,6 @@ import RPi.GPIO as gpio
 import motor as robot
 
 
-cap = cv2.VideoCapture(0)     #opencv reads video from camera ---- if couldnt read then change from 0 to 1
 hsvValues = [0, 0, 0, 179, 185, 105]  # values to reccog the the line 
 # 0,0,0,179,72,148 (initial value tests on the pc)
 sensors = 3   # numbers of sensors == numbers of sub screens
@@ -37,7 +36,7 @@ def getCountours(imgT, img ):
     return cx
 
 
-def getSensorOutput(imgT,sensors): ## if the sensor have problem in detecting check here
+def getSensorOutput(imgT, sensors, img): ## if the sensor have problem in detecting check here
     imgv = np.vsplit(imgT, sensors)
     imgs = np.hsplit(imgv[1],sensors)
     totalpixels = (img.shape[1]//(sensors * sensors)) * img.shape[0]
@@ -63,8 +62,8 @@ def getSensorOutput(imgT,sensors): ## if the sensor have problem in detecting ch
     return [senout, jn]
 
 
-def sendCommands(senout,cx): 
-    global curve
+def get_error(senout,cx): 
+    curve = 0
     ## translation
     lr = (cx - width//2) #//sensitivity
     lr = int(np.clip(lr,-200,200))
@@ -87,39 +86,5 @@ def sendCommands(senout,cx):
     return [curve, lr]
 
 
-
-I = 0
-last_Error = 0
-while True:
-    try:
-        ret, img = cap.read()
-        img = cv2.resize(img, (width, height))
-        imgT = thresholding(img)
-        cx = getCountours(imgT,img) ## translation
-        senout = getSensorOutput(imgT,sensors) ## rotation
-        direction = sendCommands(senout,cx)
-
-        # some computation that couldn't be done in the robot module
-        I = I + direction[1]
-        robot.steer(direction[0], direction[1], senout[1], I, last_Error)
-        last_Error = direction[1]
-
-        #diplay normal and hsv adjusted
-        cv2.imshow('final', img)   ## showing actual video
-        cv2.imshow('black and white',imgT) ## shows black and white
-        cv2.waitKey(1)
-
-        #escape key to break
-        k = cv2.waitKey(30) & 0xff
-        if k == 27:
-            break
-
-    except Exception as e:
-        print(e)
-
-    finally: 
-
-        pass
-        # robot.gpio.cleanup()
         
 

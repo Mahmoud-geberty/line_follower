@@ -23,6 +23,18 @@ lm = gpio.PWM(33, 1000)
 rm.start(0)
 lm.start(0)
 
+# manage the state of the car
+states = {
+        "wait": 0,
+        "follow": 1,
+        "j_turn": 2,
+        "start": 3,
+        "end": 4
+    }
+
+# polling the server for a command from mobile app
+current_state = states['wait']
+
 
 def setup():
     pass
@@ -65,6 +77,11 @@ def reverse(speed):
     rm_backward(speed)
     lm_backward(speed)
 
+''' 
+given an error: that is the deviation from the center of the line, 
+Use Pid controller to keep the car on the line
+
+'''
 P = 0
 D = 0
 def steer(curve, error, jn, I, last_error):
