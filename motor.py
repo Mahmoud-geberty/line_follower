@@ -8,7 +8,7 @@ description: Motor control logic and responding to
 '''
 
 import RPi.GPIO as gpio
-import time
+from time import sleep
 
 gpio.setmode(gpio.BOARD)
 gpio.setwarnings(False)
@@ -31,9 +31,6 @@ states = {
         "start": 3,
         "end": 4
     }
-
-# polling the server for a command from mobile app
-current_state = states['wait']
 
 
 def setup():
@@ -70,12 +67,42 @@ def straight(speed):
     rm_forward(speed)
     lm_forward(speed + 3)
 
+def go_straight():
+    print('going straight')
+    rm_forward(35)
+    lm_forward(35 + 3)
+    sleep(0.4)
+
 def start():
     straight(35)
 
 def reverse(speed):
     rm_backward(speed)
-    lm_backward(speed)
+    lm_backward(speed + 8)
+
+def turn_right():
+    sleep(0.5)
+    stop()
+    print('turning right')
+    sleep(0.4)
+    lm_forward(48)
+    rm_backward(41)
+    sleep(0.6)
+    reverse(35)
+    sleep(0.5)
+    stop()
+
+def turn_left():
+    sleep(0.6)
+    stop()
+    print('turning left')
+    sleep(0.4)
+    rm_forward(41)
+    lm_backward(48)
+    sleep(0.7)
+    reverse(35)
+    sleep(0.5)
+    stop()
 
 ''' 
 given an error: that is the deviation from the center of the line, 
@@ -84,32 +111,28 @@ Use Pid controller to keep the car on the line
 '''
 P = 0
 D = 0
-def steer(curve, error, jn, I, last_error):
+def steer(error, jn, I, last_error):
     # error gain
-    speed = 40
-    Kp = 0.05
-    Ki = 0.0003
-    Kd = 0.02
+    speed = 35
+    Kp = 0.03
+    Ki = 0#.0003
+    Kd = 0.001
     P = error * Kp
     I = I * Ki
     D = (error - last_error) * Kd
     last_error = error
-    print(f'received: curve: {curve}, error: {error}, jn: {jn} and PID {P + I + D}')
+    print(f'error: {error}, jn: {jn} and PID {P + I + D}')
     r_tune = 5 # help make the base speed of each motor same
 
     #direction control using error only
     rm_forward(speed - (P + I + D))
     lm_forward(speed + (P + I + D))
 
-
+# run the file as main to test the motors
 if __name__ == '__main__':
     try:
-        straight(40)
-        time.sleep(3)
-        stop()
-        time.sleep(1)
-        reverse(40)
-        time.sleep(3)
+        straight(35)
+        sleep(4)
         stop()
 
         while True:

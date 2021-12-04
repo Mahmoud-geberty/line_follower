@@ -5,7 +5,7 @@ import RPi.GPIO as gpio
 import motor as robot
 
 
-hsvValues = [0, 0, 0, 179, 185, 105]  # values to reccog the the line 
+hsvValues = [0, 0, 0, 179, 112, 92]  # values to reccog the the line 
 # 0,0,0,179,72,148 (initial value tests on the pc)
 sensors = 3   # numbers of sensors == numbers of sub screens
 threshold = 0.2
@@ -41,6 +41,7 @@ def getSensorOutput(imgT, sensors, img): ## if the sensor have problem in detect
     imgs = np.hsplit(imgv[1],sensors)
     totalpixels = (img.shape[1]//(sensors * sensors)) * img.shape[0]
     senout= []
+    jn = 0
 
     # junction detection
     imgv = np.vsplit(imgv[0], sensors)[2]
@@ -56,7 +57,7 @@ def getSensorOutput(imgT, sensors, img): ## if the sensor have problem in detect
             senout.append(1)
         else:
             senout.append(0)
-        cv2.imshow(str(x),im)
+        # cv2.imshow(str(x),im)
 
 
     return [senout, jn]
