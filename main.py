@@ -35,7 +35,7 @@ while True:
         # setup and start moving
         if robot.state == robot.states['start']:
             if error > 10:
-                print(f'minimize the error first bitch: {error}')
+                print(f'minimize the error first: {error}')
             else: 
                 print('about to start, let go of the robot')
                 sleep(3)
